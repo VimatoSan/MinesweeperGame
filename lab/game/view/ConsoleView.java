@@ -30,7 +30,6 @@ public class ConsoleView implements Observer {
             for (int y = 0; y < gameField.getHeight(); y++) {
                 try {
                     Cell cell = gameField.getCell(x, y);
-                    // System.out.print(cell + " ");
 
                     if (cell.isVisible()) {
                         if (cell.isHasBomb())
@@ -75,8 +74,6 @@ public class ConsoleView implements Observer {
             System.out.println("\nEnter number of cell:");
             controller.readUserInput();
         }
-        // Вывод таймера
-        // Ввод данных и отправка их в контроллер
     }
 
     @Override

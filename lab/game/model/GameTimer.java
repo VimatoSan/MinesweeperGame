@@ -30,7 +30,7 @@ public class GameTimer extends Observable{
 
     public String getTime() {
         int minutes = seconds / 60;
-        return String.format("%02d:%02d", minutes, seconds);
+        return String.format("%02d:%02d", minutes, seconds - 60 * minutes);
     }
 
     @Override

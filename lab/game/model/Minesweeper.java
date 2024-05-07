@@ -3,6 +3,7 @@ package lab.game.model;
 import lab.game.exceptions.CellAlreadyOpenedException;
 import lab.game.exceptions.CellNotFoundException;
 import lab.game.exceptions.OpeningCellWithFlagException;
+import lab.game.exceptions.UserInputException;
 import lab.game.view.Observer;
 // import java.lab.game.view.Observer;
 
@@ -72,6 +73,10 @@ public class Minesweeper extends Observable {
     }
 
     public void openCell(int x, int y) {
+        if (state != State.RUNNING && state != State.START) {
+            warnObservers(new UserInputException("Game not running"));
+            return;
+        }
         Cell cell;
         try {
             cell = gameField.getCell(x, y);
@@ -119,16 +124,21 @@ public class Minesweeper extends Observable {
 
         // gameField.getLastOpenedCoordinates().add(new int[] {x, y});
         if (cell.isHasBomb()) {
-            state = State.LOSE;
+            gameOver();
         }
         if (cell.getValue() == Cell.EMPTY) {
             // gameField.getCell(x, y).setVisible(true);
             for (int[] coords : getNeighbourCellsCoordinates(x, y))
                 open(coords[0], coords[1]);
         }
-        if (isGameWin()) {
+        if (state == State.RUNNING && isGameWin()) {
             state = State.WIN;
         }
+    }
+
+    private void gameOver() {
+        timer.stop();
+        state = State.LOSE;
     }
 
     private boolean isGameWin() {
@@ -177,21 +187,45 @@ public class Minesweeper extends Observable {
     }
 
     private void generateMines() {
+        // Если мин больше половины поля то искать совбодные места под них
         if (mines > gameField.getHeight() * gameField.getWidth())
-            throw new RuntimeException("So much mines in area!"); // Заменить исключение
-        HashSet<Integer[]> minedCoords = new HashSet<>();
+            throw new RuntimeException("So much mines in area!");
+        int selectedCellsNumber = mines;
+        if (mines > gameField.getHeight() * gameField.getWidth() / 2)
+            selectedCellsNumber = gameField.getHeight() * gameField.getWidth() - mines;
+
+        HashSet<Coordinate> selectedCoordinates = new HashSet<>();
         Random random = new Random();
-        while (minedCoords.size() < mines) {
+        while (selectedCoordinates.size() < selectedCellsNumber) {
             int x = random.nextInt(gameField.getWidth());
             int y = random.nextInt(gameField.getHeight());
-            minedCoords.add(new Integer[] {x, y});
+            selectedCoordinates.add(new Coordinate(x, y));
         }
-        for (Integer[] coords : minedCoords) {
-            Cell minedCell = new Cell(Cell.BOMB);
-            try {
-                gameField.setCell(coords[0], coords[1], minedCell);
-            } catch (CellNotFoundException e) {
-                throw new RuntimeException(e);
+
+        // System.out.println(minedCoords.size());
+        if (mines == selectedCellsNumber) {
+            for (Coordinate coords : selectedCoordinates) {
+                Cell minedCell = new Cell(Cell.BOMB);
+                try {
+                    gameField.setCell(coords.getX(), coords.getY(), minedCell);
+                } catch (CellNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        else {
+            for (int x = 0; x < gameField.getWidth(); ++x) {
+                for (int y = 0; y < gameField.getHeight(); ++y) {
+                    if (!selectedCoordinates.contains(new Coordinate(x, y))) {
+                        Cell minedCell = new Cell(Cell.BOMB);
+                        try {
+                            gameField.setCell(x, y, minedCell);
+                        } catch (CellNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
             }
         }
         // return minedCells;

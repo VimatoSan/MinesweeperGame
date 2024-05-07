@@ -7,8 +7,7 @@ import lab.game.view.ConsoleView;
 import lab.game.view.GraphicView;
 import lab.game.view.Observer;
 
-// TODO: Сделать иконку для мины
-//       Разные цвета для разных цифр
+// TODO: Разные цвета для разных цифр
 //       Кнопка перезапуска
 //       Таймер на экране GUI
 
@@ -42,5 +41,4 @@ public class Main {
         model.addObserver(view);
         model.startGame();
     }
-
 }

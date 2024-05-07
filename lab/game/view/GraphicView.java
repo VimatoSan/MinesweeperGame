@@ -6,12 +6,9 @@ import lab.game.exceptions.CellNotFoundException;
 import lab.game.model.Cell;
 import lab.game.model.GameField;
 import lab.game.model.Minesweeper;
-import lab.game.model.GameTimer;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 public class GraphicView implements Observer {
     private static final int TILE_SIZE = 40;
@@ -37,19 +34,19 @@ public class GraphicView implements Observer {
 
     private void showFrame() {
         frame.setSize(X_TILES * TILE_SIZE, Y_TILES * TILE_SIZE);
-        // frame.setResizable(false);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        JPanel board = new JPanel();
-        board.setLayout(new GridLayout(X_TILES, Y_TILES));
-        fillBoard(board);
-        frame.add(board);
-//        tiles[1][1].setText();
-//        tiles[1][1].setEnabled(false);
+
+        JPanel gameFieldPanel = new JPanel(new GridLayout(X_TILES, Y_TILES));
+        fillGameFieldPanel(gameFieldPanel);
+        //mainPanel.add(gameFieldPanel);
+        UIManager.put("Button.disabledText", new Color(51, 51, 51));
+
+        frame.add(gameFieldPanel);
         frame.setVisible(true);
     }
 
 
-    private void fillBoard(JPanel board) {
+    private void fillGameFieldPanel(JPanel board) {
         for (int x = 0; x < X_TILES; x++) {
             for (int y = 0; y < Y_TILES; y++) {
                 tiles[x][y] = new Tile(x, y);
@@ -64,18 +61,7 @@ public class GraphicView implements Observer {
             this.setBackground(Color.GRAY);
             this.setMargin(new Insets(0, 0, 0, 0));
             // System.out.println(this.getFont());
-            this.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    // System.out.println(String.format("%d %d", x, y));
-                    if (e.getButton() == MouseEvent.BUTTON1) {
-                        controller.open(x, y);
-                    }
-                    if (e.getButton() == MouseEvent.BUTTON2) {
-                        controller.setflag(x, y);
-                    }
-                }
-            });
+            this.addMouseListener(controller.handleClickOnGameCell(x, y));
         }
     }
 
@@ -91,47 +77,55 @@ public class GraphicView implements Observer {
                 } catch (CellNotFoundException e) {
                     throw new RuntimeException(e);
                 }
+
                 if (tile.isEnabled() && cell.isVisible()) {
-                    tile.setEnabled(false);
+                    tile.setBackground(Color.lightGray);
+
                     if (cell.isHasBomb()) {
                         // Установка иконки бомбы
-                        //tile.setIcon(MINE_ICON);
-
-                        tile.setBackground(Color.RED);
+                        tile.setIcon(MINE_ICON);
+                        tile.setDisabledIcon(MINE_ICON);
                     }
                     else {
-                        tile.setBackground(Color.lightGray);
-                        tile.setText(cell.toString());
+                        if (cell.getValue() != Cell.EMPTY)
+                            tile.setText(cell.toString());
                     }
+                    tile.setEnabled(false);
                 }
                 // Установка флажков
                 if (tile.getIcon() == null && cell.isHasFlag()) {
                     tile.setIcon(FLAG_ICON);
                 }
-                if (tile.getIcon() != null && !cell.isHasFlag()) {
+                if (tile.getIcon() == FLAG_ICON && !cell.isHasFlag()) {
                     tile.setIcon(null);
                 }
             }
         }
         if (state == Minesweeper.State.LOSE) {
-            // Помечать мину красным и блокировать все кнопки поля
-            for (Tile[] xTiles : tiles) {
-                for (Tile tile : xTiles) {
-                    if (tile.getIcon() != null)
-                        tile.setIcon(null);
-                    if (tile.isEnabled())
-                        tile.setEnabled(false);
-                }
-            }
+            disableGameField();
         }
         if (state == Minesweeper.State.WIN) {
             // Сообщение о победе
         }
     }
 
+    private void disableGameField() {
+        for (Tile[] xTiles : tiles) {
+            for (Tile tile : xTiles) {
+                if (tile.getIcon() != MINE_ICON) {
+                    tile.setIcon(null);
+                }
+                if (tile.isEnabled()) {
+                    tile.setEnabled(false);
+                }
+            }
+        }
+    }
+
     @Override
     public void updateTimer(String time) {
-
+        frame.setTitle(time);
+        // System.out.println(time);
     }
 
     @Override
